@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/tri-calendar.svg)](https://www.npmjs.com/package/tri-calendar)
 [![license](https://img.shields.io/npm/l/tri-calendar.svg)](./LICENSE)
 
-A small, dependency-free TypeScript library for converting and formatting dates across three calendar systems:
+A small, dependency-free TypeScript library for converting and formatting dates and local clock times across three calendar systems:
 
 - Gregorian
 - Jalali (Solar Hijri / Persian)
@@ -61,7 +61,7 @@ Choose **Add import from "tri-calendar"** and VS Code will add:
 import { convertDate } from "tri-calendar";
 ```
 
-Auto import is available for `convertDate`, `convertDateParts`, and `formatDate`. IntelliSense also displays option values such as calendar names, locales, and numbering systems.
+Auto import is available for `convertDate`, `convertDateParts`, `formatDate`, and `formatTime`. IntelliSense also displays option values such as calendar names, locales, and numbering systems.
 
 If suggestions do not appear, confirm that `tri-calendar` is installed in the current project, save the file as `.ts` or `.tsx`, and run **TypeScript: Restart TS Server** from the VS Code Command Palette.
 
@@ -130,6 +130,75 @@ convertDate(2025, options); // treated as 2025-01-01
 ```
 
 This rule applies to every supported source calendar. A year-only input defaults to month `1`, day `1`; a year-and-month input defaults to day `1`.
+
+## Date and time
+
+Append a 24-hour time to a complete or partial date using a space or `T`. Seconds are optional and default to zero:
+
+```ts
+convertDate("2024-03-20 14:05:09", {
+  from: "gregorian",
+  to: "jalali"
+}); // "1403/01/01 14:05:09"
+
+convertDate("2024-03-20T04:05", {
+  from: "gregorian",
+  to: "jalali",
+  format: "D/M/YYYY H:mm"
+}); // "1/1/1403 4:05"
+
+convertDate("2026-08-02T22:02:52.544031", {
+  from: "gregorian",
+  to: "jalali",
+  timeStyle: "hour-minute",
+  hourCycle: "h12"
+}); // "1405/05/11 10:02 PM"
+```
+
+Calendar conversion preserves the supplied clock time. It does not apply a time-zone conversion. When date-time input is supplied without an explicit format, the default output is `YYYY/MM/DD HH:mm:ss`.
+
+Time format tokens:
+
+| Token | Meaning | Example |
+| --- | --- | --- |
+| `HH` | Two-digit hour, 24-hour clock | `04` |
+| `H` | Hour without leading zero | `4` |
+| `hh` | Two-digit hour, 12-hour clock | `04` |
+| `h` | 12-hour value without leading zero | `4` |
+| `mm` | Two-digit minute | `05` |
+| `m` | Minute without leading zero | `5` |
+| `ss` | Two-digit second | `09` |
+| `s` | Second without leading zero | `9` |
+| `A` | Uppercase meridiem | `AM` / `PM` |
+| `a` | Lowercase meridiem | `am` / `pm` |
+
+## Standalone time formatting
+
+Use `formatTime` for a supplied time or the current local time:
+
+```ts
+import { formatTime } from "tri-calendar";
+
+formatTime({ hour: 14, minute: 5, second: 9 });
+// "14:05:09"
+
+formatTime("۱۴:۰۵", { numberingSystem: "arabext" });
+// "۱۴:۰۵:۰۰"
+
+formatTime("2026-08-02T22:02:52.544031", {
+  timeStyle: "hour-minute-second",
+  hourCycle: "h12"
+}); // "10:02:52 PM"
+
+formatTime(undefined, {
+  format: "H:mm",
+  numberingSystem: "latn"
+}); // current local time, for example "9:30"
+```
+
+`formatTime()` reads the system's current local time when called. It returns a string and does not create a running clock or timer.
+
+Available `timeStyle` values are `hour`, `hour-minute`, and `hour-minute-second`. The `hourCycle` may be `h23` (the default 24-hour clock) or `h12` (12-hour clock with AM/PM). An explicit `format` takes priority over these generated display options.
 
 Extended Arabic-Indic digits are accepted in input strings:
 
@@ -286,9 +355,9 @@ formatDate(
 
 ### `convertDate(input, options)`
 
-Converts and formats a date. It returns a string.
+Converts and formats a date or date-time. It returns a string.
 
-The `input` type is `string | number | DateParts`. A numeric input represents a year and defaults to month `1`, day `1`.
+The `input` type is `string | number | DateParts | DateTimeParts`. A numeric input represents a year and defaults to month `1`, day `1`.
 
 ```ts
 interface ConvertOptions {
@@ -297,6 +366,8 @@ interface ConvertOptions {
   format?: string;
   locale?: "en" | "fa" | "prs";
   numberingSystem?: "latn" | "arab" | "arabext";
+  timeStyle?: "hour" | "hour-minute" | "hour-minute-second";
+  hourCycle?: "h23" | "h12";
 }
 ```
 
@@ -310,24 +381,52 @@ interface DateParts {
   month: number;
   day: number;
 }
+
+interface DateTimeParts extends DateParts {
+  hour: number;
+  minute: number;
+  second: number;
+}
 ```
 
 ### `formatDate(date, calendar, format?, locale?, numberingSystem?)`
 
-Validates and formats date parts without converting the calendar.
+Validates and formats date or date-time parts without converting the calendar.
 
-## Validation and errors
+### `formatTime(input?, options?)`
 
-Invalid input throws a `RangeError`:
+Formats `TimeParts`, an `HH:mm[:ss]` string, or a JavaScript `Date`. With no input it formats the current local time.
+
+```ts
+interface TimeParts {
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+interface FormatTimeOptions {
+  format?: string;
+  numberingSystem?: "latn" | "arab" | "arabext";
+  timeStyle?: "hour" | "hour-minute" | "hour-minute-second";
+  hourCycle?: "h23" | "h12";
+}
+```
+
+## Invalid and empty values
+
+`convertDate` and `formatTime` return an empty string for invalid, empty, or `null` input so display code can remain safe:
 
 ```ts
 convertDate("2025-02-29", {
   from: "gregorian",
   to: "jalali"
-}); // throws RangeError
+}); // ""
+
+formatTime("24:70"); // ""
+formatTime(null); // ""
 ```
 
-Malformed strings also throw a `RangeError`. Accepted string patterns are `YYYY`, `YYYY-MM`, and `YYYY-MM-DD`, using `-`, `/`, or `.` as the separator.
+For backward compatibility, calling `formatTime()` or `formatTime(undefined)` still returns the current local time. Accepted date patterns are `YYYY`, `YYYY-MM`, and `YYYY-MM-DD`, using `-`, `/`, or `.` as the separator. A date may optionally be followed by ` HH:mm[:ss]` or `THH:mm[:ss]`, with optional fractional seconds such as `.544031`.
 
 ## Important note about Islamic dates
 

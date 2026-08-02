@@ -1,5 +1,7 @@
 export type Calendar = "gregorian" | "jalali" | "islamic";
 export type Locale = "en" | "fa" | "prs";
+export type TimeStyle = "hour" | "hour-minute" | "hour-minute-second";
+export type HourCycle = "h23" | "h12";
 /** Unicode/CLDR numbering-system identifiers. */
 export type NumberingSystem = "latn" | "arab" | "arabext";
 /** @deprecated Use NumberingSystem with the `numberingSystem` option. */
@@ -11,8 +13,27 @@ export interface DateParts {
   day: number;
 }
 
+export interface TimeParts {
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+export interface DateTimeParts extends DateParts, TimeParts {
+  /** Fractional-second digits from an ISO-like input. */
+  fractionalSecond?: string;
+}
+
 /** A full date object, a complete/partial date string, or a numeric year. */
-export type DateInput = string | number | DateParts;
+export type DateInput = string | number | DateParts | DateTimeParts;
+export type TimeInput = string | TimeParts | Date | null | undefined;
+
+export interface FormatTimeOptions {
+  format?: string;
+  numberingSystem?: NumberingSystem;
+  timeStyle?: TimeStyle;
+  hourCycle?: HourCycle;
+}
 
 export interface ConvertOptions {
   from: Calendar;
@@ -21,6 +42,10 @@ export interface ConvertOptions {
   locale?: Locale;
   /** Unicode numbering system: latn (0-9), arab (٠-٩), or arabext (۰-۹). */
   numberingSystem?: NumberingSystem;
+  /** Controls the generated time portion when `format` is omitted. */
+  timeStyle?: TimeStyle;
+  /** h23 uses 00-23; h12 uses 01-12 with AM/PM. */
+  hourCycle?: HourCycle;
   /** @deprecated Use `numberingSystem`: latin maps to latn and dari maps to arabext. */
   digits?: DigitStyle;
   /** Use Persian digits when locale is fa. Defaults to true. */
@@ -33,20 +58,137 @@ const ISLAMIC_EPOCH = 1948440;
 
 const monthNames: Record<Calendar, Record<Locale, string[]>> = {
   gregorian: {
-    en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-    fa: ["ژانویه", "فوریه", "مارس", "آوریل", "مه", "ژوئن", "ژوئیه", "اوت", "سپتامبر", "اکتبر", "نوامبر", "دسامبر"],
-    prs: ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "اگست", "سپتمبر", "اکتوبر", "نومبر", "دسمبر"]
+    en: [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ],
+    fa: [
+      "ژانویه",
+      "فوریه",
+      "مارس",
+      "آوریل",
+      "مه",
+      "ژوئن",
+      "ژوئیه",
+      "اوت",
+      "سپتامبر",
+      "اکتبر",
+      "نوامبر",
+      "دسامبر",
+    ],
+    prs: [
+      "جنوری",
+      "فبروری",
+      "مارچ",
+      "اپریل",
+      "می",
+      "جون",
+      "جولای",
+      "اگست",
+      "سپتمبر",
+      "اکتوبر",
+      "نومبر",
+      "دسمبر",
+    ],
   },
   jalali: {
-    en: ["Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar", "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand"],
-    fa: ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"],
-    prs: ["حمل", "ثور", "جوزا", "سرطان", "اسد", "سنبله", "میزان", "عقرب", "قوس", "جدی", "دلو", "حوت"]
+    en: [
+      "Farvardin",
+      "Ordibehesht",
+      "Khordad",
+      "Tir",
+      "Mordad",
+      "Shahrivar",
+      "Mehr",
+      "Aban",
+      "Azar",
+      "Dey",
+      "Bahman",
+      "Esfand",
+    ],
+    fa: [
+      "فروردین",
+      "اردیبهشت",
+      "خرداد",
+      "تیر",
+      "مرداد",
+      "شهریور",
+      "مهر",
+      "آبان",
+      "آذر",
+      "دی",
+      "بهمن",
+      "اسفند",
+    ],
+    prs: [
+      "حمل",
+      "ثور",
+      "جوزا",
+      "سرطان",
+      "اسد",
+      "سنبله",
+      "میزان",
+      "عقرب",
+      "قوس",
+      "جدی",
+      "دلو",
+      "حوت",
+    ],
   },
   islamic: {
-    en: ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Shaban", "Ramadan", "Shawwal", "Dhu al-Qadah", "Dhu al-Hijjah"],
-    fa: ["محرم", "صفر", "ربیع‌الاول", "ربیع‌الثانی", "جمادی‌الاول", "جمادی‌الثانی", "رجب", "شعبان", "رمضان", "شوال", "ذیقعده", "ذیحجه"],
-    prs: ["محرم", "صفر", "ربیع‌الاول", "ربیع‌الثانی", "جمادی‌الاول", "جمادی‌الثانی", "رجب", "شعبان", "رمضان", "شوال", "ذوالقعده", "ذوالحجه"]
-  }
+    en: [
+      "Muharram",
+      "Safar",
+      "Rabi al-Awwal",
+      "Rabi al-Thani",
+      "Jumada al-Awwal",
+      "Jumada al-Thani",
+      "Rajab",
+      "Shaban",
+      "Ramadan",
+      "Shawwal",
+      "Dhu al-Qadah",
+      "Dhu al-Hijjah",
+    ],
+    fa: [
+      "محرم",
+      "صفر",
+      "ربیع‌الاول",
+      "ربیع‌الثانی",
+      "جمادی‌الاول",
+      "جمادی‌الثانی",
+      "رجب",
+      "شعبان",
+      "رمضان",
+      "شوال",
+      "ذیقعده",
+      "ذیحجه",
+    ],
+    prs: [
+      "محرم",
+      "صفر",
+      "ربیع‌الاول",
+      "ربیع‌الثانی",
+      "جمادی‌الاول",
+      "جمادی‌الثانی",
+      "رجب",
+      "شعبان",
+      "رمضان",
+      "شوال",
+      "ذوالقعده",
+      "ذوالحجه",
+    ],
+  },
 };
 
 function div(a: number, b: number): number {
@@ -61,7 +203,15 @@ function gregorianToJdn({ year, month, day }: DateParts): number {
   const a = div(14 - month, 12);
   const y = year + 4800 - a;
   const m = month + 12 * a - 3;
-  return day + div(153 * m + 2, 5) + 365 * y + div(y, 4) - div(y, 100) + div(y, 400) - 32045;
+  return (
+    day +
+    div(153 * m + 2, 5) +
+    365 * y +
+    div(y, 4) -
+    div(y, 100) +
+    div(y, 400) -
+    32045
+  );
 }
 
 function jdnToGregorian(jdn: number): DateParts {
@@ -74,16 +224,21 @@ function jdnToGregorian(jdn: number): DateParts {
   return {
     day: e - div(153 * m + 2, 5) + 1,
     month: m + 3 - 12 * div(m, 10),
-    year: 100 * b + d - 4800 + div(m, 10)
+    year: 100 * b + d - 4800 + div(m, 10),
   };
 }
 
 function jalaliToJdn({ year, month, day }: DateParts): number {
   const epBase = year - (year >= 0 ? 474 : 473);
   const epYear = 474 + mod(epBase, 2820);
-  return day + (month <= 7 ? (month - 1) * 31 : (month - 1) * 30 + 6)
-    + div(epYear * 682 - 110, 2816) + (epYear - 1) * 365
-    + div(epBase, 2820) * 1029983 + (PERSIAN_EPOCH - 1);
+  return (
+    day +
+    (month <= 7 ? (month - 1) * 31 : (month - 1) * 30 + 6) +
+    div(epYear * 682 - 110, 2816) +
+    (epYear - 1) * 365 +
+    div(epBase, 2820) * 1029983 +
+    (PERSIAN_EPOCH - 1)
+  );
 }
 
 function jdnToJalali(jdn: number): DateParts {
@@ -106,13 +261,22 @@ function jdnToJalali(jdn: number): DateParts {
 }
 
 function islamicToJdn({ year, month, day }: DateParts): number {
-  return day + Math.ceil(29.5 * (month - 1)) + (year - 1) * 354
-    + div(3 + 11 * year, 30) + ISLAMIC_EPOCH - 1;
+  return (
+    day +
+    Math.ceil(29.5 * (month - 1)) +
+    (year - 1) * 354 +
+    div(3 + 11 * year, 30) +
+    ISLAMIC_EPOCH -
+    1
+  );
 }
 
 function jdnToIslamic(jdn: number): DateParts {
   const year = div(30 * (jdn - ISLAMIC_EPOCH) + 10646, 10631);
-  const month = Math.min(12, Math.ceil((jdn - 29 - islamicToJdn({ year, month: 1, day: 1 })) / 29.5) + 1);
+  const month = Math.min(
+    12,
+    Math.ceil((jdn - 29 - islamicToJdn({ year, month: 1, day: 1 })) / 29.5) + 1,
+  );
   const day = jdn - islamicToJdn({ year, month, day: 1 }) + 1;
   return { year, month, day };
 }
@@ -120,48 +284,128 @@ function jdnToIslamic(jdn: number): DateParts {
 const toJdn: Record<Calendar, (date: DateParts) => number> = {
   gregorian: gregorianToJdn,
   jalali: jalaliToJdn,
-  islamic: islamicToJdn
+  islamic: islamicToJdn,
 };
 
 const fromJdn: Record<Calendar, (jdn: number) => DateParts> = {
   gregorian: jdnToGregorian,
   jalali: jdnToJalali,
-  islamic: jdnToIslamic
+  islamic: jdnToIslamic,
 };
 
-function parseInput(input: DateInput): DateParts {
+function normalizeInputDigits(value: string): string {
+  return value
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+}
+
+function hasTime(value: DateParts | DateTimeParts): value is DateTimeParts {
+  return "hour" in value && "minute" in value && "second" in value;
+}
+
+function parseInput(
+  input: DateInput | null | undefined,
+): DateParts | DateTimeParts {
+  if (input === null || input === undefined || input === "")
+    throw new RangeError("Date is required");
   if (typeof input === "number") return { year: input, month: 1, day: 1 };
   if (typeof input !== "string") return { ...input };
-  const normalized = input.replace(/[۰-۹]/g, c => String("۰۱۲۳۴۵۶۷۸۹".indexOf(c)));
-  const match = normalized.trim().match(/^(-?\d{1,6})(?:[-/.](\d{1,2})(?:[-/.](\d{1,2}))?)?$/);
-  if (!match) throw new RangeError("Date must use YYYY, YYYY-MM or YYYY-MM-DD format");
-  return {
+  const normalized = normalizeInputDigits(input);
+  const match = normalized
+    .trim()
+    .match(
+      /^(-?\d{1,6})(?:[-/.](\d{1,2})(?:[-/.](\d{1,2}))?)?(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2})(?:\.(\d{1,9}))?)?)?$/,
+    );
+  if (!match)
+    throw new RangeError(
+      "Date must use YYYY, YYYY-MM or YYYY-MM-DD, optionally followed by HH:mm:ss",
+    );
+  const date: DateParts = {
     year: Number(match[1]),
     month: match[2] === undefined ? 1 : Number(match[2]),
-    day: match[3] === undefined ? 1 : Number(match[3])
+    day: match[3] === undefined ? 1 : Number(match[3]),
   };
+  return match[4] === undefined
+    ? date
+    : {
+        ...date,
+        hour: Number(match[4]),
+        minute: Number(match[5]),
+        second: match[6] === undefined ? 0 : Number(match[6]),
+        ...(match[7] === undefined ? {} : { fractionalSecond: match[7] }),
+      };
 }
 
 function validate(date: DateParts, calendar: Calendar): void {
-  if (!Number.isInteger(date.year) || !Number.isInteger(date.month) || !Number.isInteger(date.day))
+  if (
+    !Number.isInteger(date.year) ||
+    !Number.isInteger(date.month) ||
+    !Number.isInteger(date.day)
+  )
     throw new RangeError("Year, month and day must be integers");
   if (date.month < 1 || date.month > 12 || date.day < 1)
     throw new RangeError("Date is outside the valid range");
   const jdn = toJdn[calendar](date);
   const roundTrip = fromJdn[calendar](jdn);
-  if (roundTrip.year !== date.year || roundTrip.month !== date.month || roundTrip.day !== date.day)
+  if (
+    roundTrip.year !== date.year ||
+    roundTrip.month !== date.month ||
+    roundTrip.day !== date.day
+  )
     throw new RangeError(`Invalid ${calendar} date`);
+}
+
+function validateTime(time: TimeParts): void {
+  if (
+    !Number.isInteger(time.hour) ||
+    !Number.isInteger(time.minute) ||
+    !Number.isInteger(time.second)
+  )
+    throw new RangeError("Hour, minute and second must be integers");
+  if (
+    time.hour < 0 ||
+    time.hour > 23 ||
+    time.minute < 0 ||
+    time.minute > 59 ||
+    time.second < 0 ||
+    time.second > 59
+  )
+    throw new RangeError("Time is outside the valid 24-hour range");
 }
 
 const numeralSets: Record<NumberingSystem, string> = {
   latn: "0123456789",
   arab: "٠١٢٣٤٥٦٧٨٩",
-  arabext: "۰۱۲۳۴۵۶۷۸۹"
+  arabext: "۰۱۲۳۴۵۶۷۸۹",
 };
 
 function localize(value: string, numberingSystem: NumberingSystem): string {
   const numerals = numeralSets[numberingSystem];
-  return value.replace(/\d/g, digit => numerals[Number(digit)] ?? digit);
+  return value.replace(/\d/g, (digit) => numerals[Number(digit)] ?? digit);
+}
+
+function timeFormat(timeStyle: TimeStyle, hourCycle: HourCycle): string {
+  const hour = hourCycle === "h12" ? "hh" : "HH";
+  const suffix = hourCycle === "h12" ? " A" : "";
+  if (timeStyle === "hour") return `${hour}${suffix}`;
+  if (timeStyle === "hour-minute") return `${hour}:mm${suffix}`;
+  return `${hour}:mm:ss${suffix}`;
+}
+
+function timeValues(time: TimeParts): Record<string, string> {
+  const hour12 = time.hour % 12 || 12;
+  return {
+    HH: String(time.hour).padStart(2, "0"),
+    H: String(time.hour),
+    hh: String(hour12).padStart(2, "0"),
+    h: String(hour12),
+    mm: String(time.minute).padStart(2, "0"),
+    m: String(time.minute),
+    ss: String(time.second).padStart(2, "0"),
+    s: String(time.second),
+    A: time.hour < 12 ? "AM" : "PM",
+    a: time.hour < 12 ? "am" : "pm",
+  };
 }
 
 /**
@@ -171,8 +415,15 @@ function localize(value: string, numberingSystem: NumberingSystem): string {
  * formatDate({ year: 1403, month: 1, day: 1 }, "jalali", "D MMMM YYYY", "prs");
  * // "۱ حمل ۱۴۰۳"
  */
-export function formatDate(date: DateParts, calendar: Calendar, format = "YYYY/MM/DD", locale: Locale = "en", numberingSystem: NumberingSystem = locale === "en" ? "latn" : "arabext"): string {
+export function formatDate(
+  date: DateParts | DateTimeParts,
+  calendar: Calendar,
+  format = "YYYY/MM/DD",
+  locale: Locale = "en",
+  numberingSystem: NumberingSystem = locale === "en" ? "latn" : "arabext",
+): string {
   validate(date, calendar);
+  if (hasTime(date)) validateTime(date);
   const month = monthNames[calendar][locale][date.month - 1] ?? "";
   const values: Record<string, string> = {
     YYYY: String(date.year).padStart(4, "0"),
@@ -181,10 +432,67 @@ export function formatDate(date: DateParts, calendar: Calendar, format = "YYYY/M
     MM: String(date.month).padStart(2, "0"),
     DD: String(date.day).padStart(2, "0"),
     M: String(date.month),
-    D: String(date.day)
+    D: String(date.day),
+    ...timeValues(hasTime(date) ? date : { hour: 0, minute: 0, second: 0 }),
   };
-  const result = format.replace(/YYYY|MMMM|MMM|MM|DD|M|D/g, token => values[token] ?? token);
+  const result = format.replace(
+    /YYYY|MMMM|MMM|MM|DD|HH|hh|mm|ss|M|D|H|h|m|s|A|a/g,
+    (token) => values[token] ?? token,
+  );
   return localize(result, numberingSystem);
+}
+
+/**
+ * Formats a supplied time, or the current local time when called without input.
+ *
+ * @example
+ * formatTime({ hour: 14, minute: 5, second: 9 }); // "14:05:09"
+ * formatTime(); // current local time
+ */
+export function formatTime(
+  input: TimeInput = new Date(),
+  options: FormatTimeOptions = {},
+): string {
+  try {
+    if (input === null || input === "") return "";
+    let time: TimeParts;
+    if (input === undefined) input = new Date();
+    if (input instanceof Date) {
+      if (Number.isNaN(input.getTime())) return "";
+      time = {
+        hour: input.getHours(),
+        minute: input.getMinutes(),
+        second: input.getSeconds(),
+      };
+    } else if (typeof input === "string") {
+      const normalized = normalizeInputDigits(input).trim();
+      const match = normalized.match(
+        /(?:^|[T\s])(\d{1,2}):(\d{1,2})(?::(\d{1,2})(?:\.\d{1,9})?)?$/,
+      );
+      if (!match) return "";
+      time = {
+        hour: Number(match[1]),
+        minute: Number(match[2]),
+        second: match[3] === undefined ? 0 : Number(match[3]),
+      };
+    } else {
+      time = { ...input };
+    }
+    validateTime(time);
+    const pattern =
+      options.format ??
+      timeFormat(
+        options.timeStyle ?? "hour-minute-second",
+        options.hourCycle ?? "h23",
+      );
+    const result = pattern.replace(
+      /HH|hh|mm|ss|H|h|m|s|A|a/g,
+      (token) => timeValues(time)[token] ?? token,
+    );
+    return localize(result, options.numberingSystem ?? "latn");
+  } catch {
+    return "";
+  }
 }
 
 /**
@@ -199,18 +507,54 @@ export function formatDate(date: DateParts, calendar: Calendar, format = "YYYY/M
  * });
  * // "۱ حمل ۱۴۰۳"
  */
-export function convertDate(input: DateInput, options: ConvertOptions): string {
-  const source = parseInput(input);
-  validate(source, options.from);
-  const converted = fromJdn[options.to](toJdn[options.from](source));
-  const locale = options.locale ?? "en";
-  const legacyDigits = options.digits === "dari" ? "arabext" : options.digits === "latin" ? "latn" : undefined;
-  const numberingSystem = options.numberingSystem
-    ?? legacyDigits
-    ?? (options.localizedDigits === undefined
-      ? (locale === "en" ? "latn" : "arabext")
-      : (options.localizedDigits ? "arabext" : "latn"));
-  return formatDate(converted, options.to, options.format, locale, numberingSystem);
+export function convertDate(
+  input: DateInput | null | undefined,
+  options: ConvertOptions,
+): string {
+  try {
+    const source = parseInput(input);
+    validate(source, options.from);
+    if (hasTime(source)) validateTime(source);
+    const convertedDate = fromJdn[options.to](toJdn[options.from](source));
+    const converted: DateParts | DateTimeParts = hasTime(source)
+      ? {
+          ...convertedDate,
+          hour: source.hour,
+          minute: source.minute,
+          second: source.second,
+          ...(source.fractionalSecond === undefined
+            ? {}
+            : { fractionalSecond: source.fractionalSecond }),
+        }
+      : convertedDate;
+    const locale = options.locale ?? "en";
+    const legacyDigits =
+      options.digits === "dari"
+        ? "arabext"
+        : options.digits === "latin"
+          ? "latn"
+          : undefined;
+    const numberingSystem =
+      options.numberingSystem ??
+      legacyDigits ??
+      (options.localizedDigits === undefined
+        ? locale === "en"
+          ? "latn"
+          : "arabext"
+        : options.localizedDigits
+          ? "arabext"
+          : "latn");
+    const generatedTime = timeFormat(
+      options.timeStyle ?? "hour-minute-second",
+      options.hourCycle ?? "h23",
+    );
+    const format =
+      options.format ??
+      (hasTime(converted) ? `YYYY/MM/DD ${generatedTime}` : "YYYY/MM/DD");
+    return formatDate(converted, options.to, format, locale, numberingSystem);
+  } catch {
+    return "";
+  }
 }
 
 /**
@@ -220,7 +564,11 @@ export function convertDate(input: DateInput, options: ConvertOptions): string {
  * convertDateParts("1403/01/01", "jalali", "gregorian");
  * // { year: 2024, month: 3, day: 20 }
  */
-export function convertDateParts(input: DateInput, from: Calendar, to: Calendar): DateParts {
+export function convertDateParts(
+  input: DateInput,
+  from: Calendar,
+  to: Calendar,
+): DateParts {
   const source = parseInput(input);
   validate(source, from);
   return fromJdn[to](toJdn[from](source));
