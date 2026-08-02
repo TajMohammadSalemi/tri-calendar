@@ -156,6 +156,13 @@ function localize(value: string, numberingSystem: NumberingSystem): string {
   return value.replace(/\d/g, digit => numerals[Number(digit)] ?? digit);
 }
 
+/**
+ * Validates and formats date parts without changing their calendar.
+ *
+ * @example
+ * formatDate({ year: 1403, month: 1, day: 1 }, "jalali", "D MMMM YYYY", "prs");
+ * // "۱ حمل ۱۴۰۳"
+ */
 export function formatDate(date: DateParts, calendar: Calendar, format = "YYYY/MM/DD", locale: Locale = "en", numberingSystem: NumberingSystem = locale === "en" ? "latn" : "arabext"): string {
   validate(date, calendar);
   const month = monthNames[calendar][locale][date.month - 1] ?? "";
@@ -172,6 +179,18 @@ export function formatDate(date: DateParts, calendar: Calendar, format = "YYYY/M
   return localize(result, numberingSystem);
 }
 
+/**
+ * Converts a Gregorian, Jalali, or Islamic Civil date and returns a formatted string.
+ *
+ * @example
+ * convertDate("2024-03-20", {
+ *   from: "gregorian",
+ *   to: "jalali",
+ *   format: "D MMMM YYYY",
+ *   locale: "prs"
+ * });
+ * // "۱ حمل ۱۴۰۳"
+ */
 export function convertDate(input: string | DateParts, options: ConvertOptions): string {
   const source = parseInput(input);
   validate(source, options.from);
@@ -186,6 +205,13 @@ export function convertDate(input: string | DateParts, options: ConvertOptions):
   return formatDate(converted, options.to, options.format, locale, numberingSystem);
 }
 
+/**
+ * Converts a date and returns numeric `{ year, month, day }` parts.
+ *
+ * @example
+ * convertDateParts("1403/01/01", "jalali", "gregorian");
+ * // { year: 2024, month: 3, day: 20 }
+ */
 export function convertDateParts(input: string | DateParts, from: Calendar, to: Calendar): DateParts {
   const source = parseInput(input);
   validate(source, from);

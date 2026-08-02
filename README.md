@@ -47,6 +47,24 @@ const result = convertDate("2026-08-02", {
 console.log(result); // 1405/05/11
 ```
 
+## VS Code IntelliSense and auto import
+
+The package ships its TypeScript declarations and supports VS Code auto import. After installation, type an exported function name and press `Ctrl + Space` (Windows/Linux) or `Control + Space` (macOS):
+
+```ts
+convertDate
+```
+
+Choose **Add import from "tri-calendar"** and VS Code will add:
+
+```ts
+import { convertDate } from "tri-calendar";
+```
+
+Auto import is available for `convertDate`, `convertDateParts`, and `formatDate`. IntelliSense also displays option values such as calendar names, locales, and numbering systems.
+
+If suggestions do not appear, confirm that `tri-calendar` is installed in the current project, save the file as `.ts` or `.tsx`, and run **TypeScript: Restart TS Server** from the VS Code Command Palette.
+
 ## Converting between calendars
 
 Every calendar can be converted to either of the other calendars.
