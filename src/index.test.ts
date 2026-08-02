@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { convertDate, convertDateParts, formatTime } from "./index.js";
+import {
+  convertDate,
+  convertDateParts,
+  formatGregorianDate,
+  formatIslamicDate,
+  formatJalaliDate,
+  formatTime
+} from "./index.js";
 
 test("converts Gregorian to Jalali", () => {
   assert.equal(convertDate("2026-08-02", { from: "gregorian", to: "jalali" }), "1405/05/11");
@@ -132,4 +139,32 @@ test("safely handles empty, null, undefined and invalid values", () => {
   assert.equal(formatTime(null), "");
   assert.equal(formatTime("not-a-time"), "");
   assert.match(formatTime(undefined), /^\d{2}:\d{2}:\d{2}$/);
+});
+
+test("formats Gregorian dates without conversion", () => {
+  assert.equal(formatGregorianDate("2026-08-02T22:02:52.544031", {
+    format: "D MMMM YYYY, hh:mm A"
+  }), "2 August 2026, 10:02 PM");
+});
+
+test("formats Jalali dates without conversion", () => {
+  assert.equal(formatJalaliDate("1405/05/11 22:02", {
+    format: "D MMMM YYYY HH:mm",
+    locale: "prs",
+    numberingSystem: "arabext"
+  }), "۱۱ اسد ۱۴۰۵ ۲۲:۰۲");
+});
+
+test("formats Islamic Civil dates without conversion", () => {
+  assert.equal(formatIslamicDate("1448/02/18 22:02:52", {
+    timeStyle: "hour-minute",
+    hourCycle: "h12"
+  }), "1448/02/18 10:02 PM");
+});
+
+test("calendar-specific formatters safely support partial and invalid inputs", () => {
+  assert.equal(formatGregorianDate(2026), "2026/01/01");
+  assert.equal(formatJalaliDate("1405-5", { locale: "prs" }), "۱۴۰۵/۰۵/۰۱");
+  assert.equal(formatIslamicDate(null), "");
+  assert.equal(formatGregorianDate("2025-02-29"), "");
 });

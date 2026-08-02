@@ -35,6 +35,14 @@ export interface FormatTimeOptions {
   hourCycle?: HourCycle;
 }
 
+export interface FormatCalendarDateOptions extends FormatTimeOptions {
+  locale?: Locale;
+  /** @deprecated Use `numberingSystem`: latin maps to latn and dari maps to arabext. */
+  digits?: DigitStyle;
+  /** @deprecated Prefer the explicit `numberingSystem` option. */
+  localizedDigits?: boolean;
+}
+
 export interface ConvertOptions {
   from: Calendar;
   to: Calendar;
@@ -408,6 +416,27 @@ function timeValues(time: TimeParts): Record<string, string> {
   };
 }
 
+function resolveNumberingSystem(
+  locale: Locale,
+  numberingSystem?: NumberingSystem,
+  digits?: DigitStyle,
+  localizedDigits?: boolean,
+): NumberingSystem {
+  const legacyDigits =
+    digits === "dari" ? "arabext" : digits === "latin" ? "latn" : undefined;
+  return (
+    numberingSystem ??
+    legacyDigits ??
+    (localizedDigits === undefined
+      ? locale === "en"
+        ? "latn"
+        : "arabext"
+      : localizedDigits
+        ? "arabext"
+        : "latn")
+  );
+}
+
 /**
  * Validates and formats date parts without changing their calendar.
  *
@@ -495,6 +524,59 @@ export function formatTime(
   }
 }
 
+function formatCalendarInput(
+  input: DateInput | null | undefined,
+  calendar: Calendar,
+  options: FormatCalendarDateOptions = {},
+): string {
+  try {
+    const date = parseInput(input);
+    validate(date, calendar);
+    if (hasTime(date)) validateTime(date);
+    const locale = options.locale ?? "en";
+    const numberingSystem = resolveNumberingSystem(
+      locale,
+      options.numberingSystem,
+      options.digits,
+      options.localizedDigits,
+    );
+    const generatedTime = timeFormat(
+      options.timeStyle ?? "hour-minute-second",
+      options.hourCycle ?? "h23",
+    );
+    const format =
+      options.format ??
+      (hasTime(date) ? `YYYY/MM/DD ${generatedTime}` : "YYYY/MM/DD");
+    return formatDate(date, calendar, format, locale, numberingSystem);
+  } catch {
+    return "";
+  }
+}
+
+/** Formats a Gregorian date or date-time without calendar conversion. */
+export function formatGregorianDate(
+  input: DateInput | null | undefined,
+  options: FormatCalendarDateOptions = {},
+): string {
+  return formatCalendarInput(input, "gregorian", options);
+}
+
+/** Formats a Jalali/Solar Hijri date or date-time without calendar conversion. */
+export function formatJalaliDate(
+  input: DateInput | null | undefined,
+  options: FormatCalendarDateOptions = {},
+): string {
+  return formatCalendarInput(input, "jalali", options);
+}
+
+/** Formats an Islamic Civil date or date-time without calendar conversion. */
+export function formatIslamicDate(
+  input: DateInput | null | undefined,
+  options: FormatCalendarDateOptions = {},
+): string {
+  return formatCalendarInput(input, "islamic", options);
+}
+
 /**
  * Converts a Gregorian, Jalali, or Islamic Civil date and returns a formatted string.
  *
@@ -528,22 +610,12 @@ export function convertDate(
         }
       : convertedDate;
     const locale = options.locale ?? "en";
-    const legacyDigits =
-      options.digits === "dari"
-        ? "arabext"
-        : options.digits === "latin"
-          ? "latn"
-          : undefined;
-    const numberingSystem =
-      options.numberingSystem ??
-      legacyDigits ??
-      (options.localizedDigits === undefined
-        ? locale === "en"
-          ? "latn"
-          : "arabext"
-        : options.localizedDigits
-          ? "arabext"
-          : "latn");
+    const numberingSystem = resolveNumberingSystem(
+      locale,
+      options.numberingSystem,
+      options.digits,
+      options.localizedDigits,
+    );
     const generatedTime = timeFormat(
       options.timeStyle ?? "hour-minute-second",
       options.hourCycle ?? "h23",

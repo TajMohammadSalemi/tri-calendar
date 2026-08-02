@@ -61,7 +61,7 @@ Choose **Add import from "tri-calendar"** and VS Code will add:
 import { convertDate } from "tri-calendar";
 ```
 
-Auto import is available for `convertDate`, `convertDateParts`, `formatDate`, and `formatTime`. IntelliSense also displays option values such as calendar names, locales, and numbering systems.
+Auto import is available for `convertDate`, `convertDateParts`, `formatDate`, `formatTime`, `formatGregorianDate`, `formatJalaliDate`, and `formatIslamicDate`. IntelliSense also displays option values such as calendar names, locales, and numbering systems.
 
 If suggestions do not appear, confirm that `tri-calendar` is installed in the current project, save the file as `.ts` or `.tsx`, and run **TypeScript: Restart TS Server** from the VS Code Command Palette.
 
@@ -351,6 +351,35 @@ formatDate(
 ); // "۱ حمل ۱۴۰۳"
 ```
 
+## Formatting without calendar conversion
+
+Use a calendar-specific formatter when the input is already in the correct calendar. These methods validate and format the value but never convert it:
+
+```ts
+import {
+  formatGregorianDate,
+  formatJalaliDate,
+  formatIslamicDate
+} from "tri-calendar";
+
+formatGregorianDate("2026-08-02T22:02:52.544031", {
+  format: "D MMMM YYYY, hh:mm A"
+}); // "2 August 2026, 10:02 PM"
+
+formatJalaliDate("1405/05/11 22:02", {
+  format: "D MMMM YYYY HH:mm",
+  locale: "prs",
+  numberingSystem: "arabext"
+}); // "۱۱ اسد ۱۴۰۵ ۲۲:۰۲"
+
+formatIslamicDate("1448/02/18 22:02:52", {
+  timeStyle: "hour-minute",
+  hourCycle: "h12"
+}); // "1448/02/18 10:02 PM"
+```
+
+All three methods accept complete dates, partial dates, numeric years, date-time strings, and structured date parts. Invalid, empty, `null`, or `undefined` input returns an empty string.
+
 ## API reference
 
 ### `convertDate(input, options)`
@@ -409,6 +438,26 @@ interface FormatTimeOptions {
   numberingSystem?: "latn" | "arab" | "arabext";
   timeStyle?: "hour" | "hour-minute" | "hour-minute-second";
   hourCycle?: "h23" | "h12";
+}
+```
+
+### `formatGregorianDate(input, options?)`
+
+Validates and formats Gregorian input without changing its calendar.
+
+### `formatJalaliDate(input, options?)`
+
+Validates and formats Jalali/Solar Hijri input without changing its calendar.
+
+### `formatIslamicDate(input, options?)`
+
+Validates and formats Islamic Civil input without changing its calendar.
+
+The three methods share these options:
+
+```ts
+interface FormatCalendarDateOptions extends FormatTimeOptions {
+  locale?: "en" | "fa" | "prs";
 }
 ```
 
