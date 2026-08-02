@@ -105,15 +105,31 @@ Supported calendar identifiers:
 | `jalali` | Jalali / Solar Hijri calendar |
 | `islamic` | Islamic Civil / tabular Hijri calendar |
 
-## Input formats
+## Input formats and partial dates
 
-Pass a date string using `-`, `/`, or `.` as the separator:
+Pass a complete date string using `-`, `/`, or `.` as the separator:
 
 ```ts
 convertDate("2024-03-20", options);
 convertDate("2024/03/20", options);
 convertDate("2024.03.20", options);
 ```
+
+Partial dates are also accepted. Missing values default to the first valid value:
+
+```ts
+convertDate("2025", options);   // treated as 2025-01-01
+convertDate("2025-4", options); // treated as 2025-04-01
+convertDate("2025/4", options); // treated as 2025-04-01
+```
+
+A year may also be passed as a number:
+
+```ts
+convertDate(2025, options); // treated as 2025-01-01
+```
+
+This rule applies to every supported source calendar. A year-only input defaults to month `1`, day `1`; a year-and-month input defaults to day `1`.
 
 Extended Arabic-Indic digits are accepted in input strings:
 
@@ -272,6 +288,8 @@ formatDate(
 
 Converts and formats a date. It returns a string.
 
+The `input` type is `string | number | DateParts`. A numeric input represents a year and defaults to month `1`, day `1`.
+
 ```ts
 interface ConvertOptions {
   from: "gregorian" | "jalali" | "islamic";
@@ -309,7 +327,7 @@ convertDate("2025-02-29", {
 }); // throws RangeError
 ```
 
-Malformed strings also throw a `RangeError`. Accepted string patterns are `YYYY-MM-DD`, `YYYY/MM/DD`, and `YYYY.MM.DD`.
+Malformed strings also throw a `RangeError`. Accepted string patterns are `YYYY`, `YYYY-MM`, and `YYYY-MM-DD`, using `-`, `/`, or `.` as the separator.
 
 ## Important note about Islamic dates
 

@@ -11,6 +11,9 @@ export interface DateParts {
   day: number;
 }
 
+/** A full date object, a complete/partial date string, or a numeric year. */
+export type DateInput = string | number | DateParts;
+
 export interface ConvertOptions {
   from: Calendar;
   to: Calendar;
@@ -126,12 +129,17 @@ const fromJdn: Record<Calendar, (jdn: number) => DateParts> = {
   islamic: jdnToIslamic
 };
 
-function parseInput(input: string | DateParts): DateParts {
+function parseInput(input: DateInput): DateParts {
+  if (typeof input === "number") return { year: input, month: 1, day: 1 };
   if (typeof input !== "string") return { ...input };
   const normalized = input.replace(/[۰-۹]/g, c => String("۰۱۲۳۴۵۶۷۸۹".indexOf(c)));
-  const match = normalized.trim().match(/^(-?\d{1,6})[-/.](\d{1,2})[-/.](\d{1,2})$/);
-  if (!match) throw new RangeError("Date must use YYYY-MM-DD, YYYY/MM/DD or YYYY.MM.DD format");
-  return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+  const match = normalized.trim().match(/^(-?\d{1,6})(?:[-/.](\d{1,2})(?:[-/.](\d{1,2}))?)?$/);
+  if (!match) throw new RangeError("Date must use YYYY, YYYY-MM or YYYY-MM-DD format");
+  return {
+    year: Number(match[1]),
+    month: match[2] === undefined ? 1 : Number(match[2]),
+    day: match[3] === undefined ? 1 : Number(match[3])
+  };
 }
 
 function validate(date: DateParts, calendar: Calendar): void {
@@ -191,7 +199,7 @@ export function formatDate(date: DateParts, calendar: Calendar, format = "YYYY/M
  * });
  * // "۱ حمل ۱۴۰۳"
  */
-export function convertDate(input: string | DateParts, options: ConvertOptions): string {
+export function convertDate(input: DateInput, options: ConvertOptions): string {
   const source = parseInput(input);
   validate(source, options.from);
   const converted = fromJdn[options.to](toJdn[options.from](source));
@@ -212,7 +220,7 @@ export function convertDate(input: string | DateParts, options: ConvertOptions):
  * convertDateParts("1403/01/01", "jalali", "gregorian");
  * // { year: 2024, month: 3, day: 20 }
  */
-export function convertDateParts(input: string | DateParts, from: Calendar, to: Calendar): DateParts {
+export function convertDateParts(input: DateInput, from: Calendar, to: Calendar): DateParts {
   const source = parseInput(input);
   validate(source, from);
   return fromJdn[to](toJdn[from](source));

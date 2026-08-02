@@ -47,3 +47,27 @@ test("keeps legacy digit names backward compatible", () => {
 test("rejects invalid dates", () => {
   assert.throws(() => convertDate("2025-02-29", { from: "gregorian", to: "jalali" }), RangeError);
 });
+
+test("accepts a year and defaults to the first day of the year", () => {
+  assert.deepEqual(convertDateParts("2025", "gregorian", "gregorian"), {
+    year: 2025, month: 1, day: 1
+  });
+});
+
+test("accepts a numeric year", () => {
+  assert.deepEqual(convertDateParts(2025, "gregorian", "gregorian"), {
+    year: 2025, month: 1, day: 1
+  });
+});
+
+test("accepts a year and month and defaults to the first day", () => {
+  assert.deepEqual(convertDateParts("2025-4", "gregorian", "gregorian"), {
+    year: 2025, month: 4, day: 1
+  });
+});
+
+test("accepts partial dates with Extended Arabic-Indic digits", () => {
+  assert.deepEqual(convertDateParts("۱۴۰۳/۲", "jalali", "jalali"), {
+    year: 1403, month: 2, day: 1
+  });
+});

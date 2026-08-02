@@ -1,6 +1,6 @@
 {
   "name": "tri-calendar",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Dependency-free Gregorian, Jalali and Islamic Civil date conversion with Dari support",
   "type": "module",
   "sideEffects": false,
