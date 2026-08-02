@@ -1,0 +1,60 @@
+{
+  "name": "tri-calendar",
+  "version": "0.1.0",
+  "description": "Dependency-free Gregorian, Jalali and Islamic Civil date conversion with Dari support",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:test": "tsc -p tsconfig.json",
+    "test": "npm run build:test && node --test dist/index.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "date",
+    "date-converter",
+    "calendar",
+    "jalali",
+    "persian",
+    "dari",
+    "afghanistan",
+    "gregorian",
+    "hijri",
+    "islamic",
+    "typescript"
+  ],
+  "author": "Taj Mohammad Salemi (https://github.com/TajMohammadSalemi)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TajMohammadSalemi/tri-calendar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TajMohammadSalemi/tri-calendar/issues"
+  },
+  "homepage": "https://github.com/TajMohammadSalemi/tri-calendar#readme",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "typescript": "^5.9.2"
+  }
+}

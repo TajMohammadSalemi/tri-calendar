@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tgz
+
+# Local Codex workspace folders
+outputs/
+work/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
