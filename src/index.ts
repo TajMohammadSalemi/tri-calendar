@@ -24,8 +24,8 @@ export interface DateTimeParts extends DateParts, TimeParts {
   fractionalSecond?: string;
 }
 
-/** A full date object, a complete/partial date string, or a numeric year. */
-export type DateInput = string | number | DateParts | DateTimeParts;
+/** A JavaScript Date, date-parts object, complete/partial date string, or numeric year. */
+export type DateInput = string | number | Date | DateParts | DateTimeParts;
 export type TimeInput = string | TimeParts | Date | null | undefined;
 
 export interface FormatTimeOptions {
@@ -317,6 +317,17 @@ function parseInput(
   if (input === null || input === undefined || input === "")
     throw new RangeError("Date is required");
   if (typeof input === "number") return { year: input, month: 1, day: 1 };
+  if (input instanceof Date) {
+    if (Number.isNaN(input.getTime())) throw new RangeError("Invalid Date");
+    return {
+      year: input.getFullYear(),
+      month: input.getMonth() + 1,
+      day: input.getDate(),
+      hour: input.getHours(),
+      minute: input.getMinutes(),
+      second: input.getSeconds(),
+    };
+  }
   if (typeof input !== "string") return { ...input };
   const normalized = normalizeInputDigits(input);
   const match = normalized

@@ -47,6 +47,17 @@ const result = convertDate("2026-08-02", {
 console.log(result); // 1405/05/11
 ```
 
+JavaScript `Date` values are also accepted as Gregorian input. Their local date
+and clock fields are used, so the value is not shifted to UTC:
+
+```ts
+const result = convertDate(new Date(), {
+  from: "gregorian",
+  to: "jalali",
+  format: "YYYY/MM/DD"
+});
+```
+
 ## VS Code IntelliSense and auto import
 
 The package ships its TypeScript declarations and supports VS Code auto import. After installation, type an exported function name and press `Ctrl + Space` (Windows/Linux) or `Control + Space` (macOS):

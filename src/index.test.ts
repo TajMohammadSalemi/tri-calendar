@@ -13,6 +13,22 @@ test("converts Gregorian to Jalali", () => {
   assert.equal(convertDate("2026-08-02", { from: "gregorian", to: "jalali" }), "1405/05/11");
 });
 
+test("accepts a JavaScript Date as local Gregorian date and time", () => {
+  const input = new Date(2024, 2, 20, 14, 5, 9);
+  assert.equal(convertDate(input, {
+    from: "gregorian", to: "jalali", format: "YYYY/MM/DD"
+  }), "1403/01/01");
+  assert.equal(convertDate(input, {
+    from: "gregorian", to: "jalali", format: "YYYY/MM/DD HH:mm:ss"
+  }), "1403/01/01 14:05:09");
+});
+
+test("safely rejects an invalid JavaScript Date", () => {
+  assert.equal(convertDate(new Date(Number.NaN), {
+    from: "gregorian", to: "jalali"
+  }), "");
+});
+
 test("round-trips every calendar", () => {
   const original = { year: 2024, month: 3, day: 20 };
   for (const calendar of ["jalali", "islamic"] as const) {
