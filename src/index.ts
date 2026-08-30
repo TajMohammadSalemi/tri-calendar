@@ -1,5 +1,5 @@
 export type Calendar = "gregorian" | "jalali" | "islamic";
-export type Locale = "en" | "fa" | "prs";
+export type Locale = "en" | "fa" | "prs" | "ps";
 export type TimeStyle = "hour" | "hour-minute" | "hour-minute-second";
 export type HourCycle = "h23" | "h12";
 /** Unicode/CLDR numbering-system identifiers. */
@@ -37,6 +37,8 @@ export interface FormatTimeOptions {
 
 export interface FormatCalendarDateOptions extends FormatTimeOptions {
   locale?: Locale;
+  /** Replaces the localized month names for the calendar being formatted. */
+  monthNames?: readonly string[];
   /** @deprecated Use `numberingSystem`: latin maps to latn and dari maps to arabext. */
   digits?: DigitStyle;
   /** @deprecated Prefer the explicit `numberingSystem` option. */
@@ -48,6 +50,8 @@ export interface ConvertOptions {
   to: Calendar;
   format?: string;
   locale?: Locale;
+  /** Replaces the localized month names for the target calendar. */
+  monthNames?: readonly string[];
   /** Unicode numbering system: latn (0-9), arab (٠-٩), or arabext (۰-۹). */
   numberingSystem?: NumberingSystem;
   /** Controls the generated time portion when `format` is omitted. */
@@ -64,7 +68,7 @@ export interface ConvertOptions {
 const PERSIAN_EPOCH = 1948321;
 const ISLAMIC_EPOCH = 1948440;
 
-const monthNames: Record<Calendar, Record<Locale, string[]>> = {
+const monthNames: Record<Calendar, Record<Locale, readonly string[]>> = {
   gregorian: {
     en: [
       "January",
@@ -107,6 +111,20 @@ const monthNames: Record<Calendar, Record<Locale, string[]>> = {
       "اکتوبر",
       "نومبر",
       "دسمبر",
+    ],
+    ps: [
+      "جنوري",
+      "فبروري",
+      "مارچ",
+      "اپرېل",
+      "مې",
+      "جون",
+      "جولای",
+      "اګست",
+      "سپټمبر",
+      "اکتوبر",
+      "نومبر",
+      "ډسمبر",
     ],
   },
   jalali: {
@@ -152,6 +170,20 @@ const monthNames: Record<Calendar, Record<Locale, string[]>> = {
       "دلو",
       "حوت",
     ],
+    ps: [
+      "وری",
+      "غویی",
+      "غبرګولی",
+      "چنګاښ",
+      "زمری",
+      "وږی",
+      "تله",
+      "لړم",
+      "لیندۍ",
+      "مرغومی",
+      "سلواغه",
+      "کب",
+    ],
   },
   islamic: {
     en: [
@@ -189,6 +221,20 @@ const monthNames: Record<Calendar, Record<Locale, string[]>> = {
       "ربیع‌الثانی",
       "جمادی‌الاول",
       "جمادی‌الثانی",
+      "رجب",
+      "شعبان",
+      "رمضان",
+      "شوال",
+      "ذوالقعده",
+      "ذوالحجه",
+    ],
+    ps: [
+      "محرم",
+      "صفر",
+      "ربيع الاول",
+      "ربيع الثاني",
+      "جمادي الاول",
+      "جمادي الثاني",
       "رجب",
       "شعبان",
       "رمضان",
@@ -461,10 +507,14 @@ export function formatDate(
   format = "YYYY/MM/DD",
   locale: Locale = "en",
   numberingSystem: NumberingSystem = locale === "en" ? "latn" : "arabext",
+  customMonthNames?: readonly string[],
 ): string {
   validate(date, calendar);
   if (hasTime(date)) validateTime(date);
-  const month = monthNames[calendar][locale][date.month - 1] ?? "";
+  const names = customMonthNames ?? monthNames[calendar][locale];
+  if (customMonthNames !== undefined && customMonthNames.length !== 12)
+    throw new RangeError("Month names must contain exactly 12 entries");
+  const month = names[date.month - 1] ?? "";
   const values: Record<string, string> = {
     YYYY: String(date.year).padStart(4, "0"),
     MMMM: month,
@@ -558,7 +608,14 @@ function formatCalendarInput(
     const format =
       options.format ??
       (hasTime(date) ? `YYYY/MM/DD ${generatedTime}` : "YYYY/MM/DD");
-    return formatDate(date, calendar, format, locale, numberingSystem);
+    return formatDate(
+      date,
+      calendar,
+      format,
+      locale,
+      numberingSystem,
+      options.monthNames,
+    );
   } catch {
     return "";
   }
@@ -634,7 +691,14 @@ export function convertDate(
     const format =
       options.format ??
       (hasTime(converted) ? `YYYY/MM/DD ${generatedTime}` : "YYYY/MM/DD");
-    return formatDate(converted, options.to, format, locale, numberingSystem);
+    return formatDate(
+      converted,
+      options.to,
+      format,
+      locale,
+      numberingSystem,
+      options.monthNames,
+    );
   } catch {
     return "";
   }

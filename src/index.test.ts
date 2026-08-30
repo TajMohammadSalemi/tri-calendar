@@ -49,6 +49,34 @@ test("supports Dari month names and explicit Dari digits", () => {
   }), "۱ حمل ۱۴۰۳");
 });
 
+test("supports Pashto month names", () => {
+  assert.equal(convertDate("2024-08-22", {
+    from: "gregorian", to: "jalali", format: "D MMMM YYYY", locale: "ps"
+  }), "۱ وږی ۱۴۰۳");
+});
+
+test("supports consumer-provided month names", () => {
+  assert.equal(formatJalaliDate("1403/01/01", {
+    format: "D MMMM YYYY",
+    monthNames: [
+      "One", "Two", "Three", "Four", "Five", "Six",
+      "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"
+    ],
+    numberingSystem: "latn"
+  }), "1 One 1403");
+  assert.equal(convertDate("2024-03-20", {
+    from: "gregorian", to: "jalali", format: "D MMMM YYYY",
+    monthNames: [
+      "One", "Two", "Three", "Four", "Five", "Six",
+      "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"
+    ],
+    numberingSystem: "latn"
+  }), "1 One 1403");
+  assert.equal(formatJalaliDate("1403/01/01", {
+    format: "D MMMM YYYY", monthNames: ["Only one"]
+  }), "");
+});
+
 test("can show Dari language with Latin digits", () => {
   assert.equal(convertDate("2024-08-22", {
     from: "gregorian", to: "jalali", format: "D MMMM YYYY", locale: "prs", numberingSystem: "latn"

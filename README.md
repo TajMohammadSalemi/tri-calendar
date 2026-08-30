@@ -18,6 +18,7 @@ Many date libraries focus on one calendar, couple language with numeral shape, o
 
 - **Three calendars through one API** — convert between Gregorian, Jalali, and Islamic Civil dates in any direction.
 - **Dari support for Afghanistan** — Jalali months use `Hamal`, `Sawr`, `Jawza`, `Saratan`, `Asad`, `Sonbola`, `Mizan`, `Aqrab`, `Qaws`, `Jadi`, `Dalwa`, and `Hut` in Dari script.
+- **Pashto support** — use `locale: "ps"` for Pashto month names, including the native Pashto names for Jalali months.
 - **Language and numerals are independent** — for example, display a Dari month name with Latin, Arabic-Indic, or Extended Arabic-Indic digits.
 - **No runtime dependencies** — the conversion algorithms are included in the package.
 - **Deterministic conversion** — the same input always produces the same result, including Islamic Civil dates.
@@ -265,6 +266,7 @@ Choose localized month names with `locale`:
 | `en` | English |
 | `fa` | Iranian Persian |
 | `prs` | Dari (Afghanistan) |
+| `ps` | Pashto |
 
 ### Dari example
 
@@ -383,6 +385,11 @@ formatJalaliDate("1405/05/11 22:02", {
   numberingSystem: "arabext"
 }); // "۱۱ اسد ۱۴۰۵ ۲۲:۰۲"
 
+formatJalaliDate("1403/01/01", {
+  format: "D MMMM YYYY",
+  locale: "ps"
+}); // "۱ وری ۱۴۰۳"
+
 formatIslamicDate("1448/02/18 22:02:52", {
   timeStyle: "hour-minute",
   hourCycle: "h12"
@@ -404,7 +411,8 @@ interface ConvertOptions {
   from: "gregorian" | "jalali" | "islamic";
   to: "gregorian" | "jalali" | "islamic";
   format?: string;
-  locale?: "en" | "fa" | "prs";
+  locale?: "en" | "fa" | "prs" | "ps";
+  monthNames?: readonly string[];
   numberingSystem?: "latn" | "arab" | "arabext";
   timeStyle?: "hour" | "hour-minute" | "hour-minute-second";
   hourCycle?: "h23" | "h12";
@@ -429,9 +437,9 @@ interface DateTimeParts extends DateParts {
 }
 ```
 
-### `formatDate(date, calendar, format?, locale?, numberingSystem?)`
+### `formatDate(date, calendar, format?, locale?, numberingSystem?, monthNames?)`
 
-Validates and formats date or date-time parts without converting the calendar.
+Validates and formats date or date-time parts without converting the calendar. `monthNames`, when provided, must contain exactly 12 names.
 
 ### `formatTime(input?, options?)`
 
@@ -468,8 +476,18 @@ The three methods share these options:
 
 ```ts
 interface FormatCalendarDateOptions extends FormatTimeOptions {
-  locale?: "en" | "fa" | "prs";
+  locale?: "en" | "fa" | "prs" | "ps";
+  monthNames?: readonly string[];
 }
+```
+
+`monthNames` may be supplied to `convertDate`, `formatDate`, or any calendar-specific formatter to replace the names for the formatted calendar. Provide exactly 12 names, in calendar order:
+
+```ts
+formatJalaliDate("1403/01/01", {
+  format: "D MMMM YYYY",
+  monthNames: ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"]
+}); // "۱ One ۱۴۰۳"
 ```
 
 ## Invalid and empty values
